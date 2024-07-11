@@ -16,7 +16,6 @@ steps:
           '--image', 'asia-south2-docker.pkg.dev/realcoderzstaging/my-repo/hello:$COMMIT_SHA',
           '--region', 'asia-south2',
           '--platform', 'managed',
-          '--no-traffic',
           '--allow-unauthenticated']
     id: DEPLOY
 
