@@ -1,0 +1,28 @@
+# Author Sourabh Aswal
+# Senior Devops 
+
+
+steps:
+
+  # Build app
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/crashview-001/cloud-run-repo/cloud-run:$COMMIT_SHA', '.']
+    id: BUILD
+
+  # Storage of the image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/crashview-001/cloud-run-repo/cloud-run:$COMMIT_SHA']
+    id: STORAGE
+
+  # Deploy
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['run', 'deploy', 'cloud-run-service',
+          '--image', 'us-central1-docker.pkg.dev/crashview-001/cloud-run-repo/cloud-run:$COMMIT_SHA',
+          '--region', 'us-central1',
+          '--platform', 'managed',
+          '--allow-unauthenticated']
+    id: DEPLOY
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+ 
