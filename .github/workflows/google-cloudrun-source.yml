@@ -7,11 +7,13 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: 'realcoderzdemo' 
+  PROJECT_ID: 'realcoderzdemo'
   REGION: 'us-central1'
   SERVICE: 'my-cloud-run'
-  # Format: region-docker.pkg.dev/project-id/repository-name/image-name
-  IMAGE_NAME: 'gcr.io/realcoderzdemo/demo-myapp'
+  # Updated to match your exact repository path
+  GAR_LOCATION: 'us-central1'
+  REPOSITORY: 'demo-myapp'
+  IMAGE_NAME: 'my-app-image' 
 
 jobs:
   deploy:
@@ -31,28 +33,25 @@ jobs:
         with:
           credentials_json: '${{ secrets.SA_CREDS }}'
 
-      # 1. Setup gcloud CLI to use Docker with Artifact Registry
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
+      # Authenticate Docker to your specific Artifact Registry location
+      - name: 'Docker Auth'
+        run: |-
+          gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
 
-      - name: 'Authorize Docker'
-        run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev
-
-      # 2. Build and Push Docker Image
+      # Build and Push the image using the path you provided
       - name: 'Build and Push Container'
         run: |-
-          docker build -t "${{ env.IMAGE_NAME }}:${{ github.sha }}" .
-          docker push "${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" .
+          docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
-      # 3. Deploy to Cloud Run using the Image
+      # Deploy the specific image to Cloud Run
       - name: 'Deploy to Cloud Run'
         id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
           service: '${{ env.SERVICE }}'
           region: '${{ env.REGION }}'
-          image: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          image: '${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
           flags: '--allow-unauthenticated'
 
       - name: 'Show output'
